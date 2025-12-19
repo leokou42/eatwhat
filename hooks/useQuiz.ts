@@ -4,7 +4,7 @@ import { Question } from '@/types';
 import { QuizStatus } from '@/types/quiz';
 import { quizMachine, INITIAL_STATE } from '@/lib/quizMachine';
 import { recommendationService } from '@/services/recommendationService';
-import { RankedRestaurant } from '@/lib/rankRestaurants';
+import { RankedRestaurant, UserLocation } from '@/lib/rankRestaurants';
 
 interface UseQuizReturn {
     uiState: QuizStatus;
@@ -25,8 +25,27 @@ interface UseQuizReturn {
 export function useQuiz(): UseQuizReturn {
     const [state, dispatch] = useReducer(quizMachine, INITIAL_STATE);
     const [results, setResults] = useState<RankedRestaurant[]>([]);
+    const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
 
     const currentQuestion = QUESTIONS[state.currentQIndex];
+
+    // Fetch Geolocation on Mount
+    useEffect(() => {
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
+                },
+                (error) => {
+                    console.warn('Geolocation access denied or failed', error);
+                    // We just proceed without location (mock/default distances will be used)
+                }
+            );
+        }
+    }, []);
 
     const choose = useCallback((choice: 'left' | 'right' | 'skip') => {
         dispatch({
@@ -59,7 +78,7 @@ export function useQuiz(): UseQuizReturn {
             abortController = new AbortController();
             const signal = abortController.signal;
 
-            recommendationService.getRecommendations(state.answers, signal)
+            recommendationService.getRecommendations(state.answers, userLocation, signal)
                 .then((data) => {
                     if (!signal.aborted) {
                         setResults(data);
@@ -81,7 +100,7 @@ export function useQuiz(): UseQuizReturn {
                 abortController.abort();
             }
         };
-    }, [state.status, state.answers]);
+    }, [state.status, state.answers, userLocation]);
 
     return {
         uiState: state.status,

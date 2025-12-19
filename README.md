@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍽️ Eat What - MVP
 
-## Getting Started
+「Eat What」是一個基於 Next.js 14 的決策輔助工具，旨在解決「今天吃什麼」的世紀難題。
 
-First, run the development server:
+---
 
+## ✨ 核心功能
+- **智能推薦**：根據你的偏好（飯/麵、口味、預算等）自動排行餐廳。
+- **地理位置整合**：使用真實 GPS 座標計算與餐廳的距離。
+- **直覺交互**：支援 Tinder 式的滑動手勢與鍵盤快捷鍵。
+- **可解釋性**：告訴你為什麼推薦這間餐廳。
+- **離線開發模式**：支援切換 Mock 資料或真實 API。
+
+---
+
+## 🛠️ 開發接手說明 (Handover)
+
+如果你是切換裝置開發，或是交接給其他 AI Agent，請務必先閱讀：
+👉 **[HANDOVER.md](./HANDOVER.md)**
+
+---
+
+## 🚀 快速開始 (Quick Start)
+
+### 1. 安裝環境
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 啟動開發伺服器
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. 以 API 模式啟動
+```bash
+NEXT_PUBLIC_DATA_SOURCE=api npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. 執行測試
+```bash
+npx vitest run
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📁 專案結構
+- `app/api/`: 提供餐飲資料的 API 路由。
+- `repositories/`: 資料存取抽象層。
+- `hooks/`: 問答邏輯與地理位置獲取。
+- `lib/`: 狀態機與排行演算法。

@@ -1,11 +1,12 @@
 import { Answer } from '@/types';
-import { rankRestaurants, RankedRestaurant } from '@/lib/rankRestaurants';
+import { rankRestaurants, RankedRestaurant, UserLocation } from '@/lib/rankRestaurants';
 import { QUESTIONS } from '@/data/mock';
 import { getRestaurantRepository } from '@/repositories/restaurantRepository';
 
 export const recommendationService = {
     getRecommendations: async (
         answers: Answer[],
+        userLocation: UserLocation | null, // Accept location
         signal?: AbortSignal
     ): Promise<RankedRestaurant[]> => {
 
@@ -16,6 +17,6 @@ export const recommendationService = {
         const restaurants = await repository.listRestaurants(signal);
 
         // 2. Rank Logic (Pure)
-        return rankRestaurants(answers, restaurants, QUESTIONS);
+        return rankRestaurants(answers, restaurants, QUESTIONS, userLocation);
     },
 };
