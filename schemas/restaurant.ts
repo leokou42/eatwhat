@@ -9,6 +9,9 @@ export const RestaurantSchema = z.object({
     score: z.number().optional(),
     latitude: z.number(),
     longitude: z.number(),
+    imageUrl: z.string().url().optional(),
+    rating: z.number().min(0).max(5).optional(),
+    address: z.string().optional(),
 });
 
 export type Restaurant = z.infer<typeof RestaurantSchema>;

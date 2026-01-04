@@ -4,11 +4,19 @@ import { RestaurantSchema } from '@/schemas/restaurant';
 import { z } from 'zod';
 
 export interface IRestaurantRepository {
-    listRestaurants(signal?: AbortSignal): Promise<Restaurant[]>;
+    listRestaurants(
+        signal?: AbortSignal,
+        location?: { latitude: number; longitude: number } | null,
+        radius?: number
+    ): Promise<Restaurant[]>;
 }
 
 class MockRestaurantRepository implements IRestaurantRepository {
-    async listRestaurants(signal?: AbortSignal): Promise<Restaurant[]> {
+    async listRestaurants(
+        signal?: AbortSignal,
+        location?: { latitude: number; longitude: number } | null,
+        radius?: number
+    ): Promise<Restaurant[]> {
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
                 resolve(MOCK_RESTAURANTS);
@@ -25,9 +33,22 @@ class MockRestaurantRepository implements IRestaurantRepository {
 }
 
 class ApiRestaurantRepository implements IRestaurantRepository {
-    async listRestaurants(signal?: AbortSignal): Promise<Restaurant[]> {
+    async listRestaurants(
+        signal?: AbortSignal,
+        location?: { latitude: number; longitude: number } | null,
+        radius?: number
+    ): Promise<Restaurant[]> {
         try {
-            const response = await fetch('/api/restaurants', { signal });
+            const url = new URL('/api/restaurants', window.location.origin);
+            if (location) {
+                url.searchParams.set('lat', location.latitude.toString());
+                url.searchParams.set('lng', location.longitude.toString());
+            }
+            if (radius) {
+                url.searchParams.set('radius', radius.toString());
+            }
+
+            const response = await fetch(url.toString(), { signal });
 
             if (!response.ok) {
                 throw new Error(`API Error: ${response.status} ${response.statusText}`);
@@ -50,12 +71,55 @@ class ApiRestaurantRepository implements IRestaurantRepository {
     }
 }
 
+export class GooglePlacesRepository implements IRestaurantRepository {
+    async listRestaurants(
+        signal?: AbortSignal,
+        location?: { latitude: number; longitude: number } | null,
+        radius?: number
+    ): Promise<Restaurant[]> {
+        if (!location) {
+            console.warn('GooglePlacesRepository requires location. Falling back to mock.');
+            return MOCK_RESTAURANTS;
+        }
+
+        try {
+            const url = new URL('/api/places', window.location.origin);
+            url.searchParams.set('lat', location.latitude.toString());
+            url.searchParams.set('lng', location.longitude.toString());
+            if (radius) url.searchParams.set('radius', radius.toString());
+
+            const response = await fetch(url.toString(), { signal });
+
+            if (!response.ok) {
+                throw new Error(`Places API Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // If API route returned an error/mock hint, handle it or return empty
+            if (data.error) {
+                console.warn('Backend returned error for Places:', data.error);
+                return [];
+            }
+
+            return z.array(RestaurantSchema).parse(data);
+        } catch (error) {
+            console.error('Failed to fetch from Google Places:', error);
+            return [];
+        }
+    }
+}
+
 // Factory to select implementation
 export function getRestaurantRepository(): IRestaurantRepository {
     const dataSource = process.env.NEXT_PUBLIC_DATA_SOURCE;
 
     if (dataSource === 'api') {
         return new ApiRestaurantRepository();
+    }
+
+    if (dataSource === 'google') {
+        return new GooglePlacesRepository();
     }
 
     return new MockRestaurantRepository();

@@ -14,7 +14,7 @@ export const recommendationService = {
         const repository = getRestaurantRepository();
 
         // Pass signal to repository for network cancellation
-        const restaurants = await repository.listRestaurants(signal);
+        const restaurants = await repository.listRestaurants(signal, userLocation);
 
         // 2. Rank Logic (Pure)
         return rankRestaurants(answers, restaurants, QUESTIONS, userLocation);

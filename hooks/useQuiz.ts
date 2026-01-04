@@ -80,6 +80,7 @@ export function useQuiz(): UseQuizReturn {
 
             recommendationService.getRecommendations(state.answers, userLocation, signal)
                 .then((data) => {
+                    console.log(`useQuiz: Received ${data.length} recommendations`);
                     if (!signal.aborted) {
                         setResults(data);
                         dispatch({ type: 'LOADED' });

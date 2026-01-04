@@ -60,6 +60,8 @@ export function rankRestaurants(
         let score = 0;
         const reasons: string[] = [];
 
+        console.log(`Checking restaurant: ${restaurant.name} (Tags: ${restaurant.tags.join(', ')})`);
+
         // Recalculate distance if user location is available
         let distance = restaurant.distance;
         if (userLocation) {
@@ -85,11 +87,14 @@ export function rankRestaurants(
     });
 
     // 3. Stable Sort
-    return [...scoredRestaurants].sort((a, b) => {
+    const result = [...scoredRestaurants].sort((a, b) => {
         const scoreDiff = b.score - a.score;
         if (scoreDiff !== 0) return scoreDiff;
 
         // Secondary sort by distance (closer is better) if available
         return a.distance - b.distance;
     });
+
+    console.log(`rankRestaurants finished. Returning ${result.length} results.`);
+    return result;
 }
