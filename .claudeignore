@@ -1,0 +1,29 @@
+# 忽略相依套件 (通常很大且 AI 不需要讀)
+node_modules/
+vendor/
+
+# 忽略鎖定檔 (這是 Token 殺手，除非你在修相依性問題，否則忽略)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 忽略環境變數與敏感資料
+.env
+.env.local
+secrets/
+
+# 忽略編譯後的檔案
+dist/
+build/
+.next/
+out/
+
+# 忽略 Log 與暫存檔
+*.log
+.DS_Store
+tmp/
+
+# 忽略大型靜態資源
+public/images/
+*.svg
+*.png

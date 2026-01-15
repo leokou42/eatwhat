@@ -73,15 +73,27 @@ export function rankRestaurants(
             );
         }
 
+        const SCENARIO_TAGS = ['budget', 'luxury', 'gathering', 'solo', 'quiet', 'lively'];
+
         restaurant.tags.forEach((tag) => {
             if (tagReasons.has(tag)) {
-                score++;
+                // Scenario tags get higher weight
+                const weight = SCENARIO_TAGS.includes(tag) ? 2 : 1;
+                score += weight;
+
                 const reason = tagReasons.get(tag);
                 if (reason && !reasons.includes(reason)) {
                     reasons.push(reason);
                 }
             }
         });
+
+        // Add pre-existing reason if available (e.g. from LLM API)
+        if (restaurant.reason && !reasons.includes(restaurant.reason)) {
+            reasons.push(restaurant.reason);
+            // If it came from LLM, it's already a good match, so give it a score boost if it has no score
+            if (score === 0) score = 1;
+        }
 
         return { ...restaurant, distance, score, reasons };
     });

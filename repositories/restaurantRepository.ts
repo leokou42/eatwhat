@@ -7,7 +7,8 @@ export interface IRestaurantRepository {
     listRestaurants(
         signal?: AbortSignal,
         location?: { latitude: number; longitude: number } | null,
-        radius?: number
+        radius?: number,
+        tags?: string
     ): Promise<Restaurant[]>;
 }
 
@@ -15,7 +16,8 @@ class MockRestaurantRepository implements IRestaurantRepository {
     async listRestaurants(
         signal?: AbortSignal,
         location?: { latitude: number; longitude: number } | null,
-        radius?: number
+        radius?: number,
+        tags?: string
     ): Promise<Restaurant[]> {
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
@@ -36,7 +38,8 @@ class ApiRestaurantRepository implements IRestaurantRepository {
     async listRestaurants(
         signal?: AbortSignal,
         location?: { latitude: number; longitude: number } | null,
-        radius?: number
+        radius?: number,
+        tags?: string
     ): Promise<Restaurant[]> {
         try {
             const url = new URL('/api/restaurants', window.location.origin);
@@ -46,6 +49,9 @@ class ApiRestaurantRepository implements IRestaurantRepository {
             }
             if (radius) {
                 url.searchParams.set('radius', radius.toString());
+            }
+            if (tags) {
+                url.searchParams.set('tags', tags);
             }
 
             const response = await fetch(url.toString(), { signal });
@@ -75,7 +81,8 @@ export class GooglePlacesRepository implements IRestaurantRepository {
     async listRestaurants(
         signal?: AbortSignal,
         location?: { latitude: number; longitude: number } | null,
-        radius?: number
+        radius?: number,
+        tags?: string
     ): Promise<Restaurant[]> {
         if (!location) {
             console.warn('GooglePlacesRepository requires location. Falling back to mock.');

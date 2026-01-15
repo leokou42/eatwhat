@@ -6,14 +6,14 @@ import TopBar from '@/components/TopBar';
 import QuestionHeader from '@/components/QuestionHeader';
 import CardStage from '@/components/CardStage';
 import ActionButtons from '@/components/ActionButtons';
-import ResultsList from '@/components/ResultsList';
+import ResultCardStack from '@/components/ResultCardStack';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function Home() {
   const { uiState, currentQuestion, progress, results, error, choose, back, reset, retry } = useQuiz();
 
-  console.log(`Home: uiState=${uiState}, results=${results.length}`);
+  console.log(`Home: uiState=${uiState}, results=${results.length}, error=${error}`);
 
   useKeyboardShortcuts({
     onLeft: () => choose('left'),
@@ -57,17 +57,32 @@ export default function Home() {
           </div>
         )}
 
+        {uiState === 'error' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-gray-800">Oops! Something went wrong</h2>
+              <p className="text-gray-500 text-sm">{error || 'Failed to load recommendations'}</p>
+            </div>
+            <button
+              onClick={retry}
+              className="flex items-center gap-2 bg-orange-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-orange-600 transition-all shadow-lg"
+            >
+              <RefreshCw size={18} />
+              Try Again
+            </button>
+          </div>
+        )}
+
         {uiState === 'results' && (
           <div className="flex-1 flex flex-col w-full overflow-hidden">
-            <div className="px-6 py-2 text-center bg-white border-b border-gray-100 shadow-sm z-10">
-              <p className="text-gray-500 text-sm">Based on your choices</p>
+            <div className="px-6 py-4 text-center bg-white border-b border-gray-100 shadow-sm z-10">
+              <p className="text-gray-900 font-bold">Top Recommendations</p>
+              <p className="text-gray-500 text-xs">Swipe right to accept, left to discard</p>
             </div>
-            <ResultsList restaurants={results} />
-            <div className="p-4 bg-white border-t border-gray-100">
-              <button onClick={reset} className="w-full bg-gray-900 text-white font-bold py-3 px-4 rounded-xl hover:bg-black transition-colors">
-                Start Over
-              </button>
-            </div>
+            <ResultCardStack restaurants={results} onReset={reset} />
           </div>
         )}
       </div>
