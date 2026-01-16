@@ -283,48 +283,199 @@ function heuristicTagging(places: MinifiedPlace[]): Record<string, AITags> {
 }
 
 function inferCarbType(types: string[], name: string): AITags['carbType'] {
-  if (types.includes('ramen_restaurant') || types.includes('noodle_shop') || name.includes('麵')) {
+  const lowerName = name.toLowerCase();
+
+  // Noodle patterns
+  if (
+    types.includes('ramen_restaurant') ||
+    types.includes('noodle_shop') ||
+    lowerName.includes('noodle') ||
+    lowerName.includes('ramen') ||
+    lowerName.includes('麵') ||
+    lowerName.includes('pasta') ||
+    lowerName.includes('soba') ||
+    lowerName.includes('udon')
+  ) {
     return 'noodle';
   }
-  if (types.includes('chinese_restaurant') || name.includes('飯')) {
+
+  // Rice patterns
+  if (
+    types.includes('asian_restaurant') ||
+    types.includes('chinese_restaurant') ||
+    types.includes('taiwanese_restaurant') ||
+    types.includes('korean_restaurant') ||
+    types.includes('vietnamese_restaurant') ||
+    types.includes('thai_restaurant') ||
+    lowerName.includes('rice') ||
+    lowerName.includes('飯') ||
+    lowerName.includes('sushi') ||
+    lowerName.includes('donburi') ||
+    lowerName.includes('bibimbap') ||
+    lowerName.includes('porridge') ||
+    lowerName.includes('粥')
+  ) {
     return 'rice';
   }
-  if (types.includes('bakery') || types.includes('cafe') || name.includes('麵包')) {
+
+  // Bread patterns
+  if (
+    types.includes('bakery') ||
+    types.includes('cafe') ||
+    types.includes('sandwich_shop') ||
+    lowerName.includes('bakery') ||
+    lowerName.includes('bread') ||
+    lowerName.includes('麵包') ||
+    lowerName.includes('burger') ||
+    lowerName.includes('sandwich') ||
+    lowerName.includes('toast')
+  ) {
     return 'bread';
   }
+
   return 'other';
 }
 
 function inferMealType(types: string[], name: string): AITags['mealType'] {
-  if (types.includes('cafe') || types.includes('bakery') || types.includes('dessert_shop')) {
+  const lowerName = name.toLowerCase();
+
+  // Snack patterns
+  if (
+    types.includes('cafe') ||
+    types.includes('bakery') ||
+    types.includes('dessert_shop') ||
+    types.includes('ice_cream_shop') ||
+    types.includes('sandwich_shop') ||
+    types.includes('fast_food_restaurant') ||
+    lowerName.includes('cafe') ||
+    lowerName.includes('coffee') ||
+    lowerName.includes('dessert') ||
+    lowerName.includes('snack') ||
+    lowerName.includes('小吃') ||
+    lowerName.includes('點心') ||
+    lowerName.includes('甜點') ||
+    lowerName.includes('ice cream')
+  ) {
     return 'snack';
   }
-  if (types.includes('bar') || types.includes('night_club')) {
+
+  // Drink focused patterns
+  if (
+    types.includes('bar') ||
+    types.includes('night_club') ||
+    types.includes('wine_bar') ||
+    lowerName.includes('bar') ||
+    lowerName.includes('pub') ||
+    lowerName.includes('drinks') ||
+    lowerName.includes('cocktail') ||
+    lowerName.includes('wine')
+  ) {
     return 'drink_focused';
   }
+
   return 'full_meal';
 }
 
 function inferFlavorProfile(types: string[], name: string): AITags['flavorProfile'] {
-  if (types.includes('japanese_restaurant') || types.includes('sushi_restaurant') || name.includes('日')) {
-    return 'light';
-  }
-  if (types.includes('steak_house') || types.includes('barbecue_restaurant') || name.includes('燒烤')) {
+  const lowerName = name.toLowerCase();
+
+  // Heavy patterns
+  if (
+    types.includes('steak_house') ||
+    types.includes('barbecue_restaurant') ||
+    types.includes('hamburger_restaurant') ||
+    types.includes('brazilian_restaurant') ||
+    types.includes('american_restaurant') ||
+    lowerName.includes('steak') ||
+    lowerName.includes('bbq') ||
+    lowerName.includes('燒烤') ||
+    lowerName.includes('烤肉') ||
+    lowerName.includes('burger') ||
+    lowerName.includes('meat') ||
+    lowerName.includes('beef') ||
+    lowerName.includes('pork') ||
+    lowerName.includes('hot pot') ||
+    lowerName.includes('火鍋') ||
+    lowerName.includes('麻辣')
+  ) {
     return 'heavy';
   }
+
+  // Light patterns
+  if (
+    types.includes('japanese_restaurant') ||
+    types.includes('sushi_restaurant') ||
+    types.includes('salad_bar') ||
+    types.includes('vegetarian_restaurant') ||
+    types.includes('vegan_restaurant') ||
+    lowerName.includes('sushi') ||
+    lowerName.includes('salad') ||
+    lowerName.includes('日') ||
+    lowerName.includes('light') ||
+    lowerName.includes('健康') ||
+    lowerName.includes('蔬食') ||
+    lowerName.includes('素')
+  ) {
+    return 'light';
+  }
+
   return 'balanced';
 }
 
 function inferAtmosphere(types: string[], name: string): AITags['atmosphere'] {
-  if (types.includes('fine_dining_restaurant') || types.includes('upscale')) {
+  const lowerName = name.toLowerCase();
+  const rating = 0; // We don't have rating in this context
+
+  // Formal patterns
+  if (
+    types.includes('fine_dining_restaurant') ||
+    types.includes('upscale') ||
+    lowerName.includes('fine dining') ||
+    lowerName.includes('luxury') ||
+    lowerName.includes('premium') ||
+    lowerName.includes('高級') ||
+    lowerName.includes('豪華')
+  ) {
     return 'formal';
   }
-  if (types.includes('fast_food_restaurant') || types.includes('food_court')) {
-    return 'casual';
-  }
-  if (types.includes('bar') || types.includes('night_club')) {
+
+  // Lively patterns
+  if (
+    types.includes('bar') ||
+    types.includes('night_club') ||
+    types.includes('izakaya') ||
+    types.includes('korean_restaurant') || // Korean restaurants often lively
+    types.includes('taiwanese_restaurant') || // Night markets style
+    types.includes('fast_food_restaurant') ||
+    lowerName.includes('bar') ||
+    lowerName.includes('pub') ||
+    lowerName.includes('bbq') ||
+    lowerName.includes('燒烤') ||
+    lowerName.includes('居酒屋') ||
+    lowerName.includes('熱炒')
+  ) {
     return 'lively';
   }
+
+  // Quiet patterns
+  if (
+    types.includes('cafe') ||
+    types.includes('tea_house') ||
+    types.includes('japanese_restaurant') ||
+    types.includes('vegetarian_restaurant') ||
+    lowerName.includes('cafe') ||
+    lowerName.includes('coffee') ||
+    lowerName.includes('tea') ||
+    lowerName.includes('zen') ||
+    lowerName.includes('quiet') ||
+    lowerName.includes('茶') ||
+    lowerName.includes('素食') ||
+    lowerName.includes('書') ||
+    lowerName.includes('閱讀')
+  ) {
+    return 'quiet';
+  }
+
   return 'casual';
 }
 
