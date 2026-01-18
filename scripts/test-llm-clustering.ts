@@ -599,15 +599,22 @@ function analyzeTagDistribution(taggedPlaces: TaggedPlace[]): Record<string, Rec
     flavorProfile: {},
     atmosphere: {},
     cuisineCategory: {},
+    priceLevel: {},
   };
 
   for (const place of taggedPlaces) {
-    if (!place.aiTags) continue;
-
-    for (const [key, value] of Object.entries(place.aiTags)) {
-      if (value) {
-        distribution[key][value] = (distribution[key][value] || 0) + 1;
+    // Collect AI tags
+    if (place.aiTags) {
+      for (const [key, value] of Object.entries(place.aiTags)) {
+        if (value) {
+          distribution[key][value] = (distribution[key][value] || 0) + 1;
+        }
       }
+    }
+
+    // Collect priceLevel from place data
+    if (place.priceLevel) {
+      distribution.priceLevel[place.priceLevel] = (distribution.priceLevel[place.priceLevel] || 0) + 1;
     }
   }
 
@@ -648,6 +655,14 @@ function evaluateQuestionRelevance(distribution: Record<string, Record<string, n
       optionB: 'lively',
       countA: distribution.atmosphere?.quiet || 0,
       countB: distribution.atmosphere?.lively || 0,
+      showQuestion: false,
+    },
+    {
+      question: '預算考量：平價還是高檔？',
+      optionA: 'PRICE_LEVEL_INEXPENSIVE',
+      optionB: 'PRICE_LEVEL_EXPENSIVE',
+      countA: distribution.priceLevel?.PRICE_LEVEL_INEXPENSIVE || 0,
+      countB: distribution.priceLevel?.PRICE_LEVEL_EXPENSIVE || 0,
       showQuestion: false,
     },
   ];
