@@ -207,6 +207,91 @@ interface MinifiedPlace {
   priceLevel?: string;
 }
 
+async function tagWithGemini(places: MinifiedPlace[]): Promise<Record<string, AITags>> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn('⚠️  GEMINI_API_KEY not found, using heuristic fallback');
+    return heuristicTagging(places);
+  }
+
+  const prompt = `你是餐廳分類專家。請為以下餐廳進行多維度分類。
+
+分類維度：
+- carbType: "noodle" (麵食), "rice" (飯類), "bread" (麵包), "other" (其他)
+- mealType: "full_meal" (正餐), "snack" (小吃), "drink_focused" (飲品為主)
+- flavorProfile: "light" (清淡), "heavy" (重口味), "balanced" (均衡)
+- atmosphere: "quiet" (安靜), "lively" (熱鬧), "casual" (休閒), "formal" (正式)
+- cuisineCategory: "taiwanese", "japanese", "korean", "chinese", "western", "cafe", "fastfood", "fusion", "other"
+
+請根據餐廳的 name, types, rating, priceLevel 進行判斷。
+
+餐廳資料：
+${JSON.stringify(places, null, 2)}
+
+請回傳 JSON 格式，key 是餐廳 ID，value 是分類結果：
+{
+  "餐廳ID": {
+    "carbType": "rice",
+    "mealType": "full_meal",
+    "flavorProfile": "balanced",
+    "atmosphere": "casual",
+    "cuisineCategory": "taiwanese"
+  },
+  ...
+}`;
+
+  const startTime = Date.now();
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.warn(`⚠️  Gemini API error: ${error}, using heuristic fallback`);
+      return heuristicTagging(places);
+    }
+
+    const data = await response.json();
+    const duration = Date.now() - startTime;
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      console.warn('⚠️  No response from Gemini, using heuristic fallback');
+      return heuristicTagging(places);
+    }
+
+    const tags = JSON.parse(text);
+    console.log(`   ✅ Gemini tagging completed in ${duration}ms`);
+    return tags;
+  } catch (error) {
+    console.warn(`⚠️  Gemini error: ${error}, using heuristic fallback`);
+    return heuristicTagging(places);
+  }
+}
+
 async function tagWithOllama(places: MinifiedPlace[]): Promise<Record<string, AITags>> {
   const prompt = `你是餐廳分類專家。請為每間餐廳分類。僅回傳 JSON 格式。
 
@@ -269,12 +354,14 @@ function heuristicTagging(places: MinifiedPlace[]): Record<string, AITags> {
   for (const place of places) {
     const types = place.types || [];
     const name = place.name.toLowerCase();
+    const rating = place.rating || 0;
+    const priceLevel = place.priceLevel || '';
 
     tags[place.id] = {
-      carbType: inferCarbType(types, name),
-      mealType: inferMealType(types, name),
-      flavorProfile: inferFlavorProfile(types, name),
-      atmosphere: inferAtmosphere(types, name),
+      carbType: inferCarbType(types, name, rating, priceLevel),
+      mealType: inferMealType(types, name, rating, priceLevel),
+      flavorProfile: inferFlavorProfile(types, name, rating, priceLevel),
+      atmosphere: inferAtmosphere(types, name, rating, priceLevel),
       cuisineCategory: inferCuisineCategory(types, name),
     };
   }
@@ -282,7 +369,7 @@ function heuristicTagging(places: MinifiedPlace[]): Record<string, AITags> {
   return tags;
 }
 
-function inferCarbType(types: string[], name: string): AITags['carbType'] {
+function inferCarbType(types: string[], name: string, rating: number, priceLevel: string): AITags['carbType'] {
   const lowerName = name.toLowerCase();
 
   // Noodle patterns
@@ -336,7 +423,7 @@ function inferCarbType(types: string[], name: string): AITags['carbType'] {
   return 'other';
 }
 
-function inferMealType(types: string[], name: string): AITags['mealType'] {
+function inferMealType(types: string[], name: string, rating: number, priceLevel: string): AITags['mealType'] {
   const lowerName = name.toLowerCase();
 
   // Snack patterns
@@ -376,7 +463,7 @@ function inferMealType(types: string[], name: string): AITags['mealType'] {
   return 'full_meal';
 }
 
-function inferFlavorProfile(types: string[], name: string): AITags['flavorProfile'] {
+function inferFlavorProfile(types: string[], name: string, rating: number, priceLevel: string): AITags['flavorProfile'] {
   const lowerName = name.toLowerCase();
 
   // Heavy patterns
@@ -422,11 +509,10 @@ function inferFlavorProfile(types: string[], name: string): AITags['flavorProfil
   return 'balanced';
 }
 
-function inferAtmosphere(types: string[], name: string): AITags['atmosphere'] {
+function inferAtmosphere(types: string[], name: string, rating: number, priceLevel: string): AITags['atmosphere'] {
   const lowerName = name.toLowerCase();
-  const rating = 0; // We don't have rating in this context
 
-  // Formal patterns
+  // Formal patterns - high rating and expensive price often indicate formal
   if (
     types.includes('fine_dining_restaurant') ||
     types.includes('upscale') ||
@@ -434,7 +520,8 @@ function inferAtmosphere(types: string[], name: string): AITags['atmosphere'] {
     lowerName.includes('luxury') ||
     lowerName.includes('premium') ||
     lowerName.includes('高級') ||
-    lowerName.includes('豪華')
+    lowerName.includes('豪華') ||
+    (rating >= 4.5 && priceLevel === 'PRICE_LEVEL_EXPENSIVE')
   ) {
     return 'formal';
   }
@@ -528,7 +615,7 @@ function analyzeTagDistribution(taggedPlaces: TaggedPlace[]): Record<string, Rec
 }
 
 function evaluateQuestionRelevance(distribution: Record<string, Record<string, number>>): QuestionRelevance[] {
-  const MIN_THRESHOLD = 5; // Minimum restaurants per option to show question
+  const MIN_THRESHOLD = 3; // Lowered from 5 to 3 for better question relevance
 
   const questions: QuestionRelevance[] = [
     {
@@ -604,7 +691,7 @@ async function runTest(location: TestLocation): Promise<TestResult> {
   }));
 
   const startTagging = Date.now();
-  const tags = await tagWithOllama(minifiedPlaces);
+  const tags = await tagWithGemini(minifiedPlaces);
   const taggingDuration = Date.now() - startTagging;
 
   const taggedPlaces: TaggedPlace[] = lastResult.places.map(p => ({
