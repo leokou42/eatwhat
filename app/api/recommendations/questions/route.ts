@@ -6,6 +6,8 @@ import { isFirstUse } from '@/lib/userState';
 import { buildStarterQuestions, buildDynamicQuestions, withIds } from '@/lib/questionBuilder';
 import { preferenceSummary } from '@/lib/preferenceSummary';
 import { PreferenceSchema, PreferenceProfile } from '@/lib/gemini';
+import { resolveRequestSettings } from '@/lib/serverSettings';
+import { modelPresetToModelName, RuntimeSettingsSchema } from '@/lib/settings';
 import { logStartup, logStartupError, msSince } from '@/lib/startupDebug';
 
 const RequestSchema = z.object({
@@ -13,6 +15,7 @@ const RequestSchema = z.object({
     latitude: z.number(),
     longitude: z.number(),
   }).optional(),
+  runtimeSettings: RuntimeSettingsSchema.optional(),
 });
 
 export async function POST(request: Request) {
@@ -35,6 +38,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
+    const resolvedSettings = await resolveRequestSettings({
+      userId,
+      runtimeSettings: parsed.data.runtimeSettings,
+    });
+
     const firstUse = await isFirstUse(userId);
     logStartup('server', 'api:recommendations/questions', 'user-state:resolved', {
       elapsedMs: msSince(startedAt),
@@ -49,6 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         phase: 'starter',
         questions: withIds(questions),
+        resolvedSettings,
       });
     }
 
@@ -61,6 +70,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         phase: 'starter',
         questions: withIds(questions),
+        resolvedSettings,
       });
     }
 
@@ -83,7 +93,8 @@ export async function POST(request: Request) {
     const summary = preferenceSummary(preference);
     const questions = await buildDynamicQuestions({
       preferenceSummary: summary,
-      confidence: preference?.confidence ?? 0.4,
+      questionLength: resolvedSettings.questionLength,
+      model: modelPresetToModelName(resolvedSettings.modelPreset),
     });
 
     logStartup('server', 'api:recommendations/questions', 'response:dynamic', {
@@ -94,6 +105,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       phase: 'dynamic',
       questions: withIds(questions),
+      resolvedSettings,
     });
   } catch (error) {
     logStartupError('server', 'api:recommendations/questions', 'request:failed', error, {

@@ -7,6 +7,8 @@ import { fetchNearbyPlaces } from '@/lib/googlePlaces';
 import { buildDynamicQuestions, withIds } from '@/lib/questionBuilder';
 import { preferenceSummary } from '@/lib/preferenceSummary';
 import { calculateDistanceKm } from '@/lib/geo';
+import { resolveRequestSettings } from '@/lib/serverSettings';
+import { modelPresetToModelName, RuntimeSettingsSchema } from '@/lib/settings';
 import { logStartup, logStartupError, msSince } from '@/lib/startupDebug';
 
 const AnswerSchema = z.object({
@@ -25,6 +27,7 @@ const RequestSchema = z.object({
   }),
   starterAnswers: z.array(AnswerSchema),
   consented: z.boolean().optional(),
+  runtimeSettings: RuntimeSettingsSchema.optional(),
 });
 
 function answersToSummary(answers: z.infer<typeof AnswerSchema>[]) {
@@ -57,6 +60,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
+    const resolvedSettings = await resolveRequestSettings({
+      userId,
+      runtimeSettings: parsed.data.runtimeSettings,
+    });
+
     if (userId) {
       const consent = await prisma.userConsent.findUnique({ where: { userId } });
       if (!consent) {
@@ -74,7 +82,11 @@ export async function POST(request: Request) {
 
     const { location, starterAnswers } = parsed.data;
     const placesStartedAt = Date.now();
-    const places = await fetchNearbyPlaces(location.latitude, location.longitude, 2000);
+    const places = await fetchNearbyPlaces(
+      location.latitude,
+      location.longitude,
+      resolvedSettings.searchRadiusM
+    );
     logStartup('server', 'api:recommendations/init', 'places:done', {
       elapsedMs: msSince(placesStartedAt),
       placeCount: places.length,
@@ -96,6 +108,7 @@ export async function POST(request: Request) {
         userHistorySummary: '首次使用，無歷史',
         starterQuizAnswers: answersToSummary(starterAnswers),
         nearbyPlacesMinimal: JSON.stringify(minimalPlaces),
+        model: modelPresetToModelName(resolvedSettings.modelPreset),
       });
       validated = PreferenceSchema.parse(preference);
       logStartup('server', 'api:recommendations/init', 'infer-preferences:done', {
@@ -136,7 +149,8 @@ export async function POST(request: Request) {
     const questionsStartedAt = Date.now();
     const questions = await buildDynamicQuestions({
       preferenceSummary: summary,
-      confidence: validated.confidence ?? 0.4,
+      questionLength: resolvedSettings.questionLength,
+      model: modelPresetToModelName(resolvedSettings.modelPreset),
     });
     logStartup('server', 'api:recommendations/init', 'dynamic-questions:done', {
       elapsedMs: msSince(questionsStartedAt),
@@ -160,6 +174,7 @@ export async function POST(request: Request) {
       nearbyCount: enrichedPlaces.length,
       inferenceSource,
       warningCode,
+      resolvedSettings,
     });
   } catch (error) {
     logStartupError('server', 'api:recommendations/init', 'request:failed', error, {

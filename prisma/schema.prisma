@@ -21,6 +21,7 @@ model User {
   accounts      Account[]
   preferences   UserPreference?
   consent       UserConsent?
+  settings      UserSettings?
   picks         UserPickHistory[]
 }
 
@@ -65,6 +66,18 @@ model UserPreference {
   userId        String   @unique
   preferenceJson Json
   updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  theme          String   @default("system")
+  modelPreset    String   @default("default")
+  questionLength String   @default("standard")
+  searchRadiusM  Int      @default(2000)
+  updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

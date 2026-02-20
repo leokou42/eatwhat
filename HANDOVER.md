@@ -77,3 +77,19 @@
 - **使用 API 模式**: `NEXT_PUBLIC_DATA_SOURCE=api npm run dev`
 - **執行測試**: `npx vitest run`
 - **正式編譯**: `npm run build`
+
+---
+
+## ⚠️ Settings Storage 注意事項（P0）
+目前推薦流程會讀取 `UserSettings`（theme/model/question length/search radius）。  
+若 DB 尚未套用最新 migration，`/api/settings` 會回傳 `SETTINGS_STORAGE_UNAVAILABLE`。
+
+### 初始化建議順序
+1. `npx prisma generate`
+2. `npx prisma migrate dev`
+3. `npm run dev`
+
+### Fail-open 行為
+- 當 `UserSettings` storage 不可用時：
+  - 推薦流程會 fallback `default + local runtime settings`，避免整體中斷
+  - 設定頁雲端持久化暫時不可用，但本機設定仍可用

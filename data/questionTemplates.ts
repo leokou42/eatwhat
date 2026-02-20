@@ -68,4 +68,20 @@ export const DYNAMIC_QUESTION_TEMPLATES: GeneratedQuestion[] = [
     leftTags: ['sweet'],
     rightTags: ['cafe'],
   },
+  {
+    text: '想吃熱呼呼還是清爽一點？',
+    leftChoice: '熱呼呼',
+    rightChoice: '清爽',
+    skipChoice: '都可以',
+    leftTags: ['heavy'],
+    rightTags: ['light'],
+  },
+  {
+    text: '今天要自己吃還是多人聚餐？',
+    leftChoice: '自己吃',
+    rightChoice: '多人聚餐',
+    skipChoice: '都可以',
+    leftTags: ['casual'],
+    rightTags: ['family'],
+  },
 ];

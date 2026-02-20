@@ -5,9 +5,10 @@ import { motion } from 'framer-motion';
 
 interface ResultsListProps {
     restaurants: RankedRestaurant[];
+    onNavigate?: (restaurant: RankedRestaurant, rank: number) => void;
 }
 
-export default function ResultsList({ restaurants }: ResultsListProps) {
+export default function ResultsList({ restaurants, onNavigate }: ResultsListProps) {
     return (
         <div className="flex-1 w-full overflow-y-auto px-6 py-4 space-y-3">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Recommended for You</h2>
@@ -28,7 +29,11 @@ export default function ResultsList({ restaurants }: ResultsListProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                     >
-                        <RestaurantCard restaurant={restaurant} rank={index + 1} />
+                        <RestaurantCard
+                            restaurant={restaurant}
+                            rank={index + 1}
+                            onNavigate={onNavigate}
+                        />
                     </motion.div>
                 ))
             )}

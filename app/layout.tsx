@@ -20,10 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-TW">
-      <body className="antialiased h-screen w-screen bg-gray-50 flex justify-center items-center">
+    <html lang="zh-TW" data-theme="system">
+      <body className="antialiased h-screen w-screen bg-[var(--app-shell-bg)] flex justify-center items-center">
         {/* Mobile container constraint */}
-        <div className="w-full max-w-md h-full bg-white relative shadow-2xl overflow-hidden flex flex-col">
+        <div className="w-full max-w-md h-full bg-[var(--app-card-bg)] relative shadow-2xl overflow-hidden flex flex-col">
           <Providers>{children}</Providers>
         </div>
       </body>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Question } from '@/types';
 import { RankedRestaurant } from '@/lib/rankRestaurants';
 import { logStartup, logStartupError, msSince } from '@/lib/startupDebug';
+import { mergeAppSettings, readGuestSettings, SETTINGS_UPDATED_EVENT } from '@/lib/settings';
 
 export type QuizPhase = 'starter' | 'dynamic';
 export type QuizStatus = 'loadingQuestions' | 'questioning' | 'loadingResults' | 'results' | 'error' | 'consent';
@@ -49,6 +50,7 @@ export function useQuiz(): UseQuizReturn {
   const [pendingAction, setPendingAction] = useState<'questions' | 'init' | 'score' | null>(null);
   const [localConsent, setLocalConsent] = useState(false);
   const [startupTrace, setStartupTrace] = useState<string[]>([]);
+  const [runtimeSettings, setRuntimeSettings] = useState(() => mergeAppSettings(readGuestSettings()));
 
   const currentQuestion = questions[currentQIndex] ?? null;
 
@@ -72,6 +74,35 @@ export function useQuiz(): UseQuizReturn {
   useEffect(() => {
     if (error) appendTrace('uiState:error', { error });
   }, [appendTrace, error]);
+
+  const syncSettings = useCallback(() => {
+    const next = mergeAppSettings(readGuestSettings());
+    setRuntimeSettings((prev) => {
+      const prevSnapshot = JSON.stringify(prev);
+      const nextSnapshot = JSON.stringify(next);
+      if (prevSnapshot === nextSnapshot) return prev;
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncSettings();
+      }
+    };
+
+    syncSettings();
+    window.addEventListener('storage', syncSettings);
+    window.addEventListener(SETTINGS_UPDATED_EVENT, syncSettings);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('storage', syncSettings);
+      window.removeEventListener(SETTINGS_UPDATED_EVENT, syncSettings);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [syncSettings]);
 
   useEffect(() => {
     const geoStartedAt = Date.now();
@@ -122,7 +153,10 @@ export function useQuiz(): UseQuizReturn {
       const response = await fetch('/api/recommendations/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location: userLocation ?? undefined }),
+        body: JSON.stringify({
+          location: userLocation ?? undefined,
+          runtimeSettings,
+        }),
       });
       const data = (await response.json().catch(() => ({}))) as {
         requiresConsent?: boolean;
@@ -163,7 +197,7 @@ export function useQuiz(): UseQuizReturn {
       setUiState('error');
       setError('Failed to load questions');
     }
-  }, [appendTrace, userLocation]);
+  }, [appendTrace, runtimeSettings, userLocation]);
 
   useEffect(() => {
     if (userLocation) {
@@ -213,7 +247,12 @@ export function useQuiz(): UseQuizReturn {
               const response = await fetch('/api/recommendations/init', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ location: userLocation, starterAnswers: nextAnswers, consented: localConsent }),
+                body: JSON.stringify({
+                  location: userLocation,
+                  starterAnswers: nextAnswers,
+                  consented: localConsent,
+                  runtimeSettings,
+                }),
               });
               const data = (await response.json().catch(() => ({}))) as {
                 requiresConsent?: boolean;
@@ -279,7 +318,11 @@ export function useQuiz(): UseQuizReturn {
               const response = await fetch('/api/recommendations/score', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ location: userLocation, answers: nextAnswers }),
+                body: JSON.stringify({
+                  location: userLocation,
+                  answers: nextAnswers,
+                  runtimeSettings,
+                }),
               });
               const data = (await response.json().catch(() => ({}))) as {
                 error?: string;
@@ -321,6 +364,7 @@ export function useQuiz(): UseQuizReturn {
       localConsent,
       phase,
       questions.length,
+      runtimeSettings,
       starterAnswers,
       userLocation,
     ]
@@ -381,7 +425,12 @@ export function useQuiz(): UseQuizReturn {
           const responseInit = await fetch('/api/recommendations/init', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ location: userLocation, starterAnswers, consented: true }),
+            body: JSON.stringify({
+              location: userLocation,
+              starterAnswers,
+              consented: true,
+              runtimeSettings,
+            }),
           });
           const data = (await responseInit.json().catch(() => ({}))) as { questions?: Question[]; error?: string };
           appendTrace('init:request:done', {
@@ -410,7 +459,7 @@ export function useQuiz(): UseQuizReturn {
       setUiState('error');
       setError('Failed to save consent');
     }
-  }, [appendTrace, fetchQuestions, pendingAction, starterAnswers, userLocation]);
+  }, [appendTrace, fetchQuestions, pendingAction, runtimeSettings, starterAnswers, userLocation]);
 
   const progress = useMemo(() => ({
     current: currentQIndex + 1,

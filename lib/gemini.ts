@@ -35,8 +35,9 @@ export async function inferPreferences(params: {
   userHistorySummary: string;
   starterQuizAnswers: string;
   nearbyPlacesMinimal: string;
+  model?: string;
 }): Promise<PreferenceProfile> {
-  const model = getGeminiModel();
+  const model = params.model ?? getGeminiModel();
   const endpoint = buildGeminiEndpoint(model);
   const startedAt = Date.now();
   logStartup('server', 'gemini', 'infer-preferences:start', {
@@ -142,8 +143,9 @@ export type GeneratedQuestion = z.infer<typeof QuestionSchema>;
 export async function rewriteQuestions(params: {
   baseQuestions: GeneratedQuestion[];
   preferenceSummary: string;
+  model?: string;
 }): Promise<GeneratedQuestion[]> {
-  const model = getGeminiModel();
+  const model = params.model ?? getGeminiModel();
   const endpoint = buildGeminiEndpoint(model);
   const startedAt = Date.now();
   logStartup('server', 'gemini', 'rewrite-questions:start', {

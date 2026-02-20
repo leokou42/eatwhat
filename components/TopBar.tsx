@@ -1,10 +1,11 @@
-import { RotateCcw, ChevronLeft } from 'lucide-react';
+import { RotateCcw, ChevronLeft, Home } from 'lucide-react';
 
 interface TopBarProps {
     currentStep: number;
     totalSteps: number;
     onReset: () => void;
     onBack?: () => void;
+    onExit?: () => void;
     canBack?: boolean;
     isResults: boolean;
 }
@@ -14,6 +15,7 @@ export default function TopBar({
     totalSteps,
     onReset,
     onBack,
+    onExit,
     canBack,
     isResults,
 }: TopBarProps) {
@@ -26,6 +28,15 @@ export default function TopBar({
             <div className="flex items-center gap-2">
                 {!isResults && (
                     <div className="flex items-center gap-2 mr-2">
+                        {onExit && (
+                            <button
+                                onClick={onExit}
+                                className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                                aria-label="Exit Recommendation"
+                            >
+                                <Home size={18} />
+                            </button>
+                        )}
                         {canBack && (
                             <button
                                 onClick={onBack}

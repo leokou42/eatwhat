@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { PreferenceSchema, PreferenceProfile } from '@/lib/gemini';
 import { fetchNearbyPlaces } from '@/lib/googlePlaces';
 import { scorePlaces } from '@/lib/recommendationScoring';
+import { resolveRequestSettings } from '@/lib/serverSettings';
+import { RuntimeSettingsSchema } from '@/lib/settings';
 import { logStartup, logStartupError, msSince } from '@/lib/startupDebug';
 
 const AnswerSchema = z.object({
@@ -17,6 +19,7 @@ const AnswerSchema = z.object({
 const RequestSchema = z.object({
   location: z.object({ latitude: z.number(), longitude: z.number() }),
   answers: z.array(AnswerSchema),
+  runtimeSettings: RuntimeSettingsSchema.optional(),
 });
 
 function applyAnswersToPreference(preference: PreferenceProfile, answers: z.infer<typeof AnswerSchema>[]) {
@@ -84,6 +87,10 @@ export async function POST(request: Request) {
     }
 
     const { location, answers } = parsed.data;
+    const resolvedSettings = await resolveRequestSettings({
+      userId,
+      runtimeSettings: parsed.data.runtimeSettings,
+    });
 
     const preferenceReadStartedAt = Date.now();
     const storedPreference = userId
@@ -117,7 +124,11 @@ export async function POST(request: Request) {
     const updatedPreference = applyAnswersToPreference(preference, answers);
 
     const placesStartedAt = Date.now();
-    const places = await fetchNearbyPlaces(location.latitude, location.longitude, 2000);
+    const places = await fetchNearbyPlaces(
+      location.latitude,
+      location.longitude,
+      resolvedSettings.searchRadiusM
+    );
     logStartup('server', 'api:recommendations/score', 'places:done', {
       elapsedMs: msSince(placesStartedAt),
       placeCount: places.length,
@@ -130,20 +141,12 @@ export async function POST(request: Request) {
       resultCount: ranked.length,
     });
 
-    if (userId && ranked[0]) {
+    if (userId) {
       const persistStartedAt = Date.now();
       await prisma.userPreference.upsert({
         where: { userId },
         create: { userId, preferenceJson: updatedPreference },
         update: { preferenceJson: updatedPreference },
-      });
-      await prisma.userPickHistory.create({
-        data: {
-          userId,
-          placeId: ranked[0].id,
-          restaurantName: ranked[0].name,
-          contextJson: { answers, preference: updatedPreference },
-        },
       });
       logStartup('server', 'api:recommendations/score', 'persist:done', {
         elapsedMs: msSince(persistStartedAt),
@@ -157,6 +160,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       results: ranked,
       preference: updatedPreference,
+      resolvedSettings,
     });
   } catch (error) {
     logStartupError('server', 'api:recommendations/score', 'request:failed', error, {

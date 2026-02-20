@@ -1,15 +1,22 @@
 import { RankedRestaurant } from '@/lib/rankRestaurants';
 import { MapPin, Navigation, ChevronDown, ChevronUp, Star } from 'lucide-react';
-import { useState } from 'react';
+import { type MouseEvent, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface RestaurantCardProps {
     restaurant: RankedRestaurant;
     rank: number;
+    onNavigate?: (restaurant: RankedRestaurant, rank: number) => void;
 }
 
-export default function RestaurantCard({ restaurant, rank }: RestaurantCardProps) {
+export default function RestaurantCard({ restaurant, rank, onNavigate }: RestaurantCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+
+    const handleNavigateClick = (event: MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        onNavigate?.(restaurant, rank);
+        window.open(restaurant.locationUrl, '_blank', 'noopener,noreferrer');
+    };
 
     return (
         <div
@@ -69,16 +76,14 @@ export default function RestaurantCard({ restaurant, rank }: RestaurantCardProps
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                        <a
-                            href={restaurant.locationUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                        <button
+                            type="button"
+                            onClick={handleNavigateClick}
                             className="p-2 text-blue-500 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                             aria-label="Open in Google Maps"
                         >
                             <Navigation size={18} />
-                        </a>
+                        </button>
                         <button
                             className="p-1 text-gray-400"
                             aria-label={isExpanded ? "Collapse" : "Expand"}

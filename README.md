@@ -51,8 +51,11 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/eatwhat
 
 ### 3. 初始化 Prisma
 ```bash
-npx prisma migrate dev --name init
+npx prisma generate
+npx prisma migrate dev
 ```
+
+若你更新過 schema（例如新增 `UserSettings`），請務必先跑以上指令再啟動 server。
 
 ### 4. 啟動開發伺服器
 ```bash
@@ -63,6 +66,14 @@ npm run dev
 ```bash
 npx vitest run
 ```
+
+---
+
+## 🔧 常見問題
+- 若 `recommend` 可開啟但設定 API 回傳 `SETTINGS_STORAGE_UNAVAILABLE`：
+  1. 先確認 PostgreSQL 有啟動且 `DATABASE_URL` 正確。
+  2. 重新執行 `npx prisma generate` 與 `npx prisma migrate dev`。
+  3. 在 migration 完成前，app 會 fallback 到 default/local settings，推薦流程可繼續使用，但登入後雲端設定持久化會暫時不可用。
 
 ---
 

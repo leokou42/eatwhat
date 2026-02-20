@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const RAW_QUESTIONS = [
     {
-        id: '1',
+        id: 1,
         text: '今天想吃飯還是吃麵？',
         leftChoice: '飯',
         rightChoice: '麵',
@@ -13,7 +13,7 @@ const RAW_QUESTIONS = [
         rightTags: ['noodle'],
     },
     {
-        id: '2',
+        id: 2,
         text: '想吃正餐還是小吃？',
         leftChoice: '正餐',
         rightChoice: '小吃',
@@ -22,7 +22,7 @@ const RAW_QUESTIONS = [
         rightTags: ['snack'],
     },
     {
-        id: '3',
+        id: 3,
         text: '口味想清淡還是重口味？',
         leftChoice: '清淡',
         rightChoice: '重口味',
@@ -31,7 +31,7 @@ const RAW_QUESTIONS = [
         rightTags: ['heavy'],
     },
     {
-        id: '4',
+        id: 4,
         text: '想吃近一點還是遠一點？',
         leftChoice: '近',
         rightChoice: '遠',
