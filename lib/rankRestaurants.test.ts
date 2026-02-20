@@ -17,7 +17,7 @@ const mockQuestions: Question[] = [
 
 const mockRestaurants: Restaurant[] = [
     {
-        id: 1,
+        id: '1',
         name: 'Rice Place',
         distance: 10, // Original
         locationUrl: '',
@@ -26,7 +26,7 @@ const mockRestaurants: Restaurant[] = [
         longitude: 121.529881
     },
     {
-        id: 2,
+        id: '2',
         name: 'Noodle Place',
         distance: 20, // Original
         locationUrl: '',
@@ -45,7 +45,7 @@ describe('rankRestaurants', () => {
         const ranked = rankRestaurants(answers, mockRestaurants, mockQuestions, null);
 
         // Check reasons for Rice Place
-        expect(ranked[0].id).toBe(1);
+        expect(ranked[0].id).toBe('1');
         expect(ranked[0].score).toBe(1);
         expect(ranked[0].reasons.length).toBeGreaterThan(0);
     });
@@ -57,7 +57,7 @@ describe('rankRestaurants', () => {
         const ranked = rankRestaurants(answers, mockRestaurants, mockQuestions, userLoc);
 
         // Distance should be very small (< 1km)
-        expect(ranked[0].id).toBe(1); // Rice place
+        expect(ranked[0].id).toBe('1'); // Rice place
         expect(ranked[0].distance).toBeLessThan(1.0);
         expect(ranked[0].distance).not.toBe(10); // Should not be 10 anymore
     });
