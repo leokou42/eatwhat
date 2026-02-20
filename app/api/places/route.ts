@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { mapGoogleTypesToTagsFlat } from '@/lib/placeMapping';
 
 const RequestSchema = z.object({
     lat: z.coerce.number(),
@@ -39,15 +40,20 @@ export async function GET(request: Request) {
         }
 
         const results = (data.results || []).map((place: any) => ({
-            id: place.place_id,
+            id: String(place.place_id),
             name: place.name,
             distance: 0, // Calculated client-side
             locationUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
-            tags: mapGoogleTypesToTags(place.types || []),
+            tags: mapGoogleTypesToTagsFlat(place.types || []),
             latitude: place.geometry.location.lat,
             longitude: place.geometry.location.lng,
             rating: place.rating,
             address: place.vicinity,
+            priceLevel: place.price_level,
+            userRatingsTotal: place.user_ratings_total,
+            openNow: place.opening_hours?.open_now,
+            businessStatus: place.business_status,
+            types: place.types,
             imageUrl: place.photos?.[0]
                 ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`
                 : undefined
@@ -60,25 +66,4 @@ export async function GET(request: Request) {
     }
 }
 
-function mapGoogleTypesToTags(types: string[]): string[] {
-    const tags: string[] = ['meal']; // Default to meal
-
-    if (types.includes('cafe') || types.includes('bakery') || types.includes('snack_bar')) {
-        tags.push('snack');
-    }
-
-    if (types.includes('japanese_restaurant') || types.includes('sushi_restaurant')) {
-        tags.push('light');
-    }
-
-    if (types.includes('steak_house') || types.includes('hamburger_restaurant') || types.includes('barbecue_restaurant')) {
-        tags.push('heavy');
-    }
-
-    // Heuristics for rice/noodle aren't perfect from types alone, but let's try
-    if (types.includes('chinese_restaurant') || types.includes('ramen_restaurant')) {
-        tags.push('noodle');
-    }
-
-    return Array.from(new Set(tags));
-}
+// Tag mapping moved to lib/placeMapping.ts

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import Providers from './providers';
 
 export const viewport = {
   width: 'device-width',
@@ -23,7 +24,7 @@ export default function RootLayout({
       <body className="antialiased h-screen w-screen bg-gray-50 flex justify-center items-center">
         {/* Mobile container constraint */}
         <div className="w-full max-w-md h-full bg-white relative shadow-2xl overflow-hidden flex flex-col">
-          {children}
+          <Providers>{children}</Providers>
         </div>
       </body>
     </html>

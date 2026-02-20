@@ -27,17 +27,39 @@
 npm install
 ```
 
-### 2. 啟動開發伺服器
+### 2. 設定環境變數
+建立 `.env.local`，至少包含：
+```
+DATABASE_URL=postgresql://user:pass@localhost:5432/eatwhat
+NEXTAUTH_URL=http://localhost:3000
+AUTH_SECRET=your-secret
+GOOGLE_MAPS_API_KEY=your-google-maps-key
+GEMINI_API_KEY=your-gemini-key
+GEMINI_MODEL=gemini-2.0-flash
+NEXT_PUBLIC_STARTUP_DEBUG=1
+```
+
+`next-auth v5` 建議使用 `AUTH_SECRET`。若你沿用舊設定，`NEXTAUTH_SECRET` 也支援。
+
+另外 Prisma CLI 預設讀取 `.env`。若你只設定 `.env.local`，請同步建立 `.env`（至少要有 `DATABASE_URL`）：
+```
+DATABASE_URL=postgresql://user:pass@localhost:5432/eatwhat
+```
+
+`NEXT_PUBLIC_STARTUP_DEBUG=1` 可在開啟 app 時輸出 client/server 啟動 trace（包含每個 API phase 與耗時）。
+`GEMINI_MODEL` 可調整推論模型；若模型不可用，`init` 會自動 fallback 預設偏好，不再直接中斷流程。
+
+### 3. 初始化 Prisma
+```bash
+npx prisma migrate dev --name init
+```
+
+### 4. 啟動開發伺服器
 ```bash
 npm run dev
 ```
 
-### 3. 以 API 模式啟動
-```bash
-NEXT_PUBLIC_DATA_SOURCE=api npm run dev
-```
-
-### 4. 執行測試
+### 5. 執行測試
 ```bash
 npx vitest run
 ```

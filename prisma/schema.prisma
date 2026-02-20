@@ -1,0 +1,82 @@
+// Prisma schema for Eat What
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String?
+  passwordHash  String?
+  createdAt     DateTime        @default(now())
+
+  sessions      Session[]
+  accounts      Account[]
+  preferences   UserPreference?
+  consent       UserConsent?
+  picks         UserPickHistory[]
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserConsent {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  llmConsentAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPreference {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  preferenceJson Json
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPickHistory {
+  id              String   @id @default(cuid())
+  userId          String
+  placeId         String?
+  restaurantId    String?
+  restaurantName  String
+  pickedAt        DateTime @default(now())
+  contextJson     Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
